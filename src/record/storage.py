@@ -16,14 +16,12 @@ TMP_SUFFIX = ".tmp"
 
 
 def records_exist(path: str) -> bool:
-    """Return True if a records file is already sitting at path.
+    """Return True if a records file already exists at path.
 
-    Manager's load() can check this before trying to read, though
-    load_records() below is also safe to call on a path that doesn't
-    exist - it's here mainly so the app can decide "first run" vs
-    "loading saved data" if that distinction ever matters to the GUI.
+        Manager can use this before attempting to load the file, for example
+        to distinguish a first run from loading previously saved records.
     """
-    raise NotImplementedError("TODO")
+    return os.path.isfile(path)
 
 
 def load_records(path: str) -> list:
@@ -32,10 +30,27 @@ def load_records(path: str) -> list:
     Raises:
         FileNotFoundError: nothing exists at path.
         ValueError: the file exists but isn't a JSON list (corrupt or
-            the wrong kind of file). Manager.load() catches both of
-            these and starts with an empty list instead of crashing.
+            the wrong kind of file).
     """
-    raise NotImplementedError("TODO")
+    if not records_exist(path):
+        raise FileNotFoundError(f"No records file at {path!r}")
+    
+    with open(path, "r", encoding="utf-8") as file:
+        records = file.read()
+
+    if not records.strip():
+        return []
+    try:
+        data = json.loads(records)
+
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Records file at {path!r} is not valid JSON") from exc
+    
+    if not isinstance(data, list):
+        raise ValueError(f"Records file at {path!r} is not a JSON list")
+    
+    return data
+
 
 
 def save_records(records: list, path: str) -> None:
@@ -45,4 +60,14 @@ def save_records(records: list, path: str) -> None:
     place, so a crash partway through a save can't corrupt the last
     good copy on disk.
     """
-    raise NotImplementedError("TODO")
+    dirname = os.path.dirname(path)
+
+    if dirname and not os.path.isdir(dirname):
+        os.makedirs(dirname, exist_ok=True)
+
+    temp_path = path + TMP_SUFFIX
+
+    with open(temp_path, "w", encoding="utf-8") as file:
+        json.dump(records, file, indent=4, ensure_ascii=False)
+
+    os.replace(temp_path, path)

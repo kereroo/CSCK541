@@ -1,109 +1,212 @@
-"""Record definitions for the travel agent records system.
+"""Record definitions and validation for the travel agent records system.
 
-Each function here checks one record's fields and hands back a clean
-dict, or raises if something is wrong. Manager calls these before it
-ever adds a record to the list, so bad data never gets that far.
+This module validates the fields belonging to a single record and
+returns a cleaned dictionary, or raises RecordValidationError when
+the supplied data is invalid.
 
-Models never touch the file system and never see the full records
-list - they only ever look at the one dict of fields they're given.
+It does not access the file system and does not inspect the complete
+records list. Record relationships and business rules are handled by
+the record manager.
 """
 
 from datetime import datetime
+from error import RecordValidationError
+
 
 CLIENT = "Client"
 AIRLINE = "Airline"
 FLIGHT = "Flight"
+
 RECORD_TYPES = (CLIENT, AIRLINE, FLIGHT)
 
-# Which fields belong to each record type, and which of those must not
-# be left blank. Manager's create/update both need this same list, so
-# it lives here rather than in two places.
+
+# Fields belonging to each record type.
 FIELDS = {
     CLIENT: (
-        "Name", "AddressLine1", "AddressLine2", "AddressLine3",
-        "City", "State", "ZipCode", "Country", "PhoneNumber",
+        "Name",
+        "AddressLine1",
+        "AddressLine2",
+        "AddressLine3",
+        "City",
+        "State",
+        "ZipCode",
+        "Country",
+        "PhoneNumber",
     ),
-    AIRLINE: ("CompanyName",),
-    FLIGHT: ("Client_ID", "Airline_ID", "Date", "StartCity", "EndCity"),
+    AIRLINE: (
+        "CompanyName",
+    ),
+    FLIGHT: (
+        "Client_ID",
+        "Airline_ID",
+        "Date",
+        "StartCity",
+        "EndCity",
+    ),
 }
 
+
+# Fields that must not be left blank.
 REQUIRED = {
-    CLIENT: ("Name", "AddressLine1", "City", "ZipCode", "Country", "PhoneNumber"),
-    AIRLINE: ("CompanyName",),
-    FLIGHT: ("Client_ID", "Airline_ID", "Date", "StartCity", "EndCity"),
+    CLIENT: (
+        "Name",
+        "AddressLine1",
+        "City",
+        "ZipCode",
+        "Country",
+        "PhoneNumber",
+    ),
+    AIRLINE: (
+        "CompanyName",
+    ),
+    FLIGHT: (
+        "Client_ID",
+        "Airline_ID",
+        "Date",
+        "StartCity",
+        "EndCity",
+    ),
 }
 
-# Fields that must hold a whole number rather than free text.
+
+# Fields that must hold positive whole numbers.
 INT_FIELDS = {
-    FLIGHT: ("Client_ID", "Airline_ID"),
+    FLIGHT: (
+        "Client_ID",
+        "Airline_ID",
+    )
 }
 
 
-class RecordValidationError(ValueError):
-    """Raised when a field is missing, empty, or the wrong shape.
+# Accepted text formats for stored dates, tried in order.
+DATE_FORMATS = (
+    "%Y-%m-%d %H:%M",
+    "%Y-%m-%d",
+)
 
-    Manager catches this the same way it catches its own RecordError,
-    so the GUI shows one kind of message either way.
-    """
 
-
-# Building and checking one record
 def build_record(record_type: str, fields: dict) -> dict:
-    """Validate fields and return the validated record dictionary."""
+    """Validate fields and return a cleaned record dictionary."""
 
     check_type(record_type)
 
-    validate = {
+    validated_record = {
         "Type": record_type
     }
 
     for field in FIELDS[record_type]:
         value = fields.get(field, "")
+        required = field in REQUIRED[record_type]
 
         if field in INT_FIELDS.get(record_type, ()):
-            # TODO: validate and convert whole-number fields
-            pass
+            validated_record[field] = as_whole_number(value)
 
         elif field == "Date":
-            # TODO: validate and format the date
-            pass
+            validated_record[field] = as_date(value)
 
         else:
-            # TODO: validate text fields
-            pass
+            validated_record[field] = as_text(
+                value,
+                required=required
+            )
 
-    return validate
+    return validated_record
 
 
 def check_type(record_type: str) -> None:
-    """Raise if record_type isn't one of Client/Airline/Flight."""
-    raise NotImplementedError("TODO")
+    """Raise if record_type is not Client, Airline, or Flight."""
+
+    if record_type not in RECORD_TYPES:
+        raise RecordValidationError(
+            f"Unknown record type: {record_type!r}"
+        )
 
 
-# Field-level checks, shared by build_record for every type
 def as_text(value, required: bool = False) -> str:
-    """Turn value into a string, optionally rejecting it if blank.
+    """Convert a value to cleaned text.
 
-    None becomes "". Numbers and other non-string values are
-    converted with str(value) rather than rejected outright.
+    None becomes an empty string. Other non-string values are converted
+    using str(). Leading and trailing whitespace is removed.
+
+    Raises:
+        RecordValidationError: if the field is required and blank.
     """
-    raise NotImplementedError("TODO")
+
+    if value is None:
+        value = ""
+    elif not isinstance(value, str):
+        value = str(value)
+
+    value = value.strip()
+
+    if required and value == "":
+        raise RecordValidationError(
+            "This field must not be empty"
+        )
+
+    return value
 
 
 def as_whole_number(value) -> int:
-    """Turn value into an int, or raise if it can't be.
+    """Convert a value to a positive whole number.
 
-    The GUI always hands over text, so "4" must work as well as 4.
-    "" and "four" must not.
+    Values such as 4 and "4" are accepted.
+    Blank values, words, zero, negative numbers, and decimals
+    are rejected.
+
+    Raises:
+        RecordValidationError: if the value is not a positive integer.
     """
-    raise NotImplementedError("TODO")
+
+    if isinstance(value, bool):
+        raise RecordValidationError(
+            f"Must be a whole number, got {value!r}"
+        )
+
+    if isinstance(value, float):
+        raise RecordValidationError(
+            f"Must be a whole number, got {value!r}"
+        )
+
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise RecordValidationError(
+            f"Must be a whole number, got {value!r}"
+        ) from exc
+
+    if number <= 0:
+        raise RecordValidationError(
+            f"Must be greater than 0, got {value!r}"
+        )
+
+    return number
 
 
 def as_date(value) -> str:
-    """Turn value into a stored date string, or raise if it can't be.
+    """Convert a value to a valid stored date string.
 
-    Accepts a datetime object (converted to a string) or already-
-    formatted text in "YYYY-MM-DD" or "YYYY-MM-DD HH:MM". Anything
-    else is rejected, since it can't safely go into JSON either way.
+    Accepts datetime objects or text formatted as:
+    YYYY-MM-DD
+    YYYY-MM-DD HH:MM
+
+    Raises:
+        RecordValidationError: if the value is blank or invalid.
     """
-    raise NotImplementedError("TODO")
+
+    if isinstance(value, datetime):
+        return value.strftime(DATE_FORMATS[0])
+
+    text = as_text(value, required=True)
+
+    for fmt in DATE_FORMATS:
+        try:
+            datetime.strptime(text, fmt)
+            return text
+        except ValueError:
+            continue
+
+    raise RecordValidationError(
+        f"Date must be 'YYYY-MM-DD' or "
+        f"'YYYY-MM-DD HH:MM', got {value!r}"
+    )
