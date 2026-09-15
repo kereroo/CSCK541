@@ -1,0 +1,21 @@
+# Byte-compiled files Python writes next to the source
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Editors and IDEs
+.idea/
+.vscode/
+*.swp
+
+# Operating system clutter
+.DS_Store
+Thumbs.db
+
+# Written by storage.save_records while it moves the new file into place.
+# A crash partway through a save can leave one behind.
+*.tmp
