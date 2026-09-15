@@ -10,7 +10,7 @@ the record manager.
 """
 
 from datetime import datetime
-from error import RecordValidationError
+from record.error import RecordValidationError
 
 
 CLIENT = "Client"
