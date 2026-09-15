@@ -7,6 +7,7 @@ and writes files.
 """
 
 from record import model, storage
+from record.error import RecordError
 
 CLIENT = "Client"
 AIRLINE = "Airline"
@@ -23,19 +24,10 @@ RECORD_TYPES = (CLIENT, AIRLINE, FLIGHT)
 # Which key on a flight points back at a client or an airline. Delete
 # reads this to find the flights that would be left pointing at
 # nothing, and create reads it to check a booking names real records.
-
 FLIGHT_LINKS = {
     CLIENT: "Client_ID",
     AIRLINE: "Airline_ID",
 }
-
-
-class RecordError(Exception):
-    """Raised when a request cannot be carried out.
-
-    The GUI catches it and shows the message, so the user reads
-    "Client 4 not found" instead of the app closing.
-    """
 
 
 class RecordManager:
@@ -69,10 +61,7 @@ class RecordManager:
         """
         self._check_type(record_type)
 
-        try:
-            record = model.build_record(record_type, fields)
-        except model.RecordValidationError as exc:
-            raise RecordError(str(exc)) from exc
+        record = model.build_record(record_type, fields)
 
         if record_type == FLIGHT:
             self._check_links(record)
@@ -142,10 +131,8 @@ class RecordManager:
         changed = {key: value for key, value in fields.items()
                    if key not in ("ID", "Type")}
 
-        try:
-            record = model.build_record(record_type, {**existing, **changed})
-        except model.RecordValidationError as exc:
-            raise RecordError(str(exc)) from exc
+        record = model.build_record(record_type,
+                                    {**existing, **changed})
 
         if record_type == FLIGHT:
             self._check_links(record)
@@ -236,3 +223,4 @@ class RecordManager:
         """
         for record_type, link in FLIGHT_LINKS.items():
             self.get(record_type, flight.get(link))
+            
