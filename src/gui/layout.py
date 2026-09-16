@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
-from src.record.manager import RecordManager
-from src.record.error import RecordError
+from record.manager import RecordManager
+from record.error import RecordError
 
 
 class TravelRecordSystem:
@@ -40,7 +40,9 @@ class TravelRecordSystem:
         self.notebook.add(self.tab_airlines, text="🏢 Airline Records")
 
         # Define form and tree fields for each entity
-        client_form_fields = ["Name", "Address Line 1", "City", "Zip Code", "Country", "Phone Number"]
+        client_form_fields = ["Name", "Address Line 1", "Address Line 2",
+                              "Address Line 3", "City", "State",
+                              "Zip Code", "Country", "Phone Number"]
         client_tree_fields = ["ID"] + client_form_fields
 
         flight_form_fields = ["Client_ID", "Airline_ID", "Date", "Start City", "End City"]
