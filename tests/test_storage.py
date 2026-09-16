@@ -1,7 +1,11 @@
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+# Add the src directory to sys.path so we can import storage
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from record import storage
 
 class StorageTestCase(unittest.TestCase):
