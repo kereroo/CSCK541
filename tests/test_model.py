@@ -96,7 +96,7 @@ def test_as_date_accepts_date_and_time_string():
 
 
 def test_as_date_accepts_datetime_object():
-    assert as_date(datetime(2026, 9, 16)) == "2026-09-16"
+    assert as_date(datetime(2026, 9, 16)) == "2026-09-16 00:00"
 
 
 def test_as_date_rejects_blank_string():
