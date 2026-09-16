@@ -86,6 +86,10 @@ def test_as_whole_number_rejects_non_numeric_string():
     with pytest.raises(RecordValidationError):
         as_whole_number("four")
 
+def test_as_whole_number_rejects_none():
+    with pytest.raises(RecordValidationError):
+        as_whole_number(None)
+
 
 def test_as_date_accepts_date_only_string():
     assert as_date("2026-09-16") == "2026-09-16"
@@ -178,3 +182,4 @@ def test_build_record_missing_optional_field_defaults_to_empty_string():
     record = build_record("Client", fields)
     assert record["AddressLine2"] == ""
     assert record["AddressLine3"] == ""
+
