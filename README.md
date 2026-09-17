@@ -8,8 +8,11 @@ CSCK541 end of module assignment, University of Liverpool.
 
 ## Requirements
 
-Python 3.11 or newer, with tkinter. There is nothing to install, as the
-app uses only the standard library.
+Python 3.11 or newer, with tkinter. Install dependencies with:
+
+```
+pip install -r requirements.txt
+```
 
 Most Python installations include tkinter already. On Debian or Ubuntu it
 is a separate package:
@@ -35,7 +38,7 @@ with an empty list and creates the file when you close it.
 From the project root:
 
 ```
-python -m unittest discover tests
+pytest
 ```
 
 ## Records
